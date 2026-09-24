@@ -1,0 +1,27 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# --- Environment & Secrets ---
+.env
+.env.local
+
+# --- Operating System Files ---
+.DS_Store
+Thumbs.db
+
+# --- Next.js / Frontend (if in the same repo) ---
+node_modules/
+.next/
+out/
+build/
+dist/
