@@ -9,10 +9,21 @@ from models.anime import Anime, AnimeSimilarity
 logger = logging.getLogger("anime_app")
 
 
-async def get_anime_listing(database: Session):
+async def get_anime_listing(database: Session, search: str | None = None):
     try:
-        # Returns a base query that fastapi-pagination can wrap
-        query = database.query(Anime).order_by(Anime.popularity.asc())
+        query = database.query(Anime)
+        
+        # Apply search filter if query string is provided
+        if search:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                (Anime.title.ilike(search_pattern)) |
+                (Anime.title_english.ilike(search_pattern)) |
+                (Anime.genres.ilike(search_pattern)) |
+                (Anime.studios.ilike(search_pattern))
+            )
+            
+        query = query.order_by(Anime.popularity.asc())
         return query
     except Exception as e:
         logger.error("Error preparing anime listing query: %s", str(e), exc_info=True)

@@ -15,11 +15,12 @@ async def anime_list(
     database: Session = Depends(get_db),
     size: int = Query(20, ge=1, le=50, description="Items per page (max 50)"),
     page: int = Query(1, ge=1, description="Page number"),
+    search: str | None = Query(None, description="Search query for title, genre, or studio"),
 ):
     """
-    Get paginated list of anime. Supports custom page sizes (10, 20, max 50).
+    Get paginated list of anime with optional search filtering.
     """
-    anime_query = await get_anime_listing(database)
+    anime_query = await get_anime_listing(database, search=search)
     return sqlalchemy_paginate(database, anime_query)
 
 
