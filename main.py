@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
-# import uvicorn
+import uvicorn
 from contextlib import asynccontextmanager
 import logging
 
 from routes.anime import router as anime_router
+from routes.manga import router as manga_router
 
 # Configure logger for the anime app
 logger = logging.getLogger("anime_app")
@@ -47,6 +48,7 @@ app.add_middleware(
 # Register pagination and routers
 add_pagination(app)
 app.include_router(anime_router)
+app.include_router(manga_router)
 
 @app.get("/")
 async def root():
@@ -57,5 +59,5 @@ async def root():
 async def health_check():
     return {"message": "FastAPI Anime Recommendation API is healthy"}
 
-# if __name__ == "__main__":
-#     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
