@@ -32,7 +32,8 @@ origins = [
     "http://localhost:8080", 
     "http://localhost:3000",
     "https://animerecommendationfrontend.vercel.app",
-    "https://animelounge.in"
+    "https://animelounge.in",
+    "https://www.animelounge.in"
 ]
 
 app.add_middleware(
