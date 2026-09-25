@@ -17,7 +17,8 @@ def get_database_url():
     db_password = os.getenv("DATABASE_PASSWORD")
     db_host = os.getenv("DATABASE_HOST")
     db_name = os.getenv("DATABASE_NAME")
-    return f"postgresql+psycopg://{db_user}:{db_password}@{db_host}/{db_name}"
+    db_port = os.getenv("DATABASE_PORT")
+    return f"postgresql+psycopg://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
 def seed_data():
     start_time = time.time()

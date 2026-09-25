@@ -38,8 +38,9 @@ def get_url():
     db_password = os.getenv("DATABASE_PASSWORD")
     db_host = os.getenv("DATABASE_HOST")
     db_name = os.getenv("DATABASE_NAME")
+    db_port = os.getenv("DATABASE_PORT", "5432")
 
-    return f"postgresql://{db_user}:{db_password}@{db_host}/{db_name}"
+    return f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
 
 def run_migrations_offline():
