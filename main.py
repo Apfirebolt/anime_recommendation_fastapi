@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 import logging
 
 from routes.anime import router as anime_router
+from routes.manga import router as manga_router
 
 # Configure logger for the anime app
 logger = logging.getLogger("anime_app")
@@ -47,6 +48,7 @@ app.add_middleware(
 # Register pagination and routers
 add_pagination(app)
 app.include_router(anime_router)
+app.include_router(manga_router)
 
 @app.get("/")
 async def root():
