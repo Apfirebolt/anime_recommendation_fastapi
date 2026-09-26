@@ -1,3 +1,4 @@
+from datetime import date
 from fastapi import APIRouter, Depends, status, Query
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
@@ -16,11 +17,27 @@ async def manga_list(
     size: int = Query(20, ge=1, le=50, description="Items per page (max 50)"),
     page: int = Query(1, ge=1, description="Page number"),
     search: str | None = Query(None, description="Search query for title, genre, author, or serialization"),
+    genre: str | None = Query(None, description="Filter by a specific genre (e.g., 'Action')"),
+    published_after: date | None = Query(None, description="Filter manga published on or after this date (YYYY-MM-DD)"),
+    published_before: date | None = Query(None, description="Filter manga published on or before this date (YYYY-MM-DD)"),
+    sort_by: str | None = Query(
+        "popularity", 
+        description="Sort criteria: 'popularity', 'highest_voted', 'most_chapters', 'most_volumes', 'newest', 'oldest', 'favorites', 'rank'"
+    ),
 ):
     """
-    Get paginated list of manga with optional search filtering.
+    Get paginated list of manga with search, genre, publishing date range, and custom sorting options.
     """
-    manga_query = await get_manga_listing(database, search=search)
+    manga_query = await get_manga_listing(
+        database, 
+        search=search,
+        genre=genre,
+        published_after=published_after,
+        published_before=published_before,
+        sort_by=sort_by,
+        page=page,
+        size=size
+    )
     return sqlalchemy_paginate(database, manga_query)
 
 

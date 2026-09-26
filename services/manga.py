@@ -1,4 +1,6 @@
+from datetime import date
 from fastapi import HTTPException, status
+from sqlalchemy import cast, Date
 from sqlalchemy.orm import Session
 import logging
 
@@ -7,11 +9,20 @@ from models.manga import Manga, MangaSimilarity
 logger = logging.getLogger("anime_app")
 
 
-async def get_manga_listing(database: Session, search: str | None = None):
+async def get_manga_listing(
+    database: Session, 
+    search: str | None = None,
+    genre: str | None = None,
+    published_after: date | None = None,
+    published_before: date | None = None,
+    sort_by: str | None = "popularity",
+    page: int = 1,
+    size: int = 20,
+):
     try:
         query = database.query(Manga)
         
-        # Apply search filter if query string is provided
+        # 1. Apply search filter
         if search:
             search_pattern = f"%{search}%"
             query = query.filter(
@@ -21,9 +32,43 @@ async def get_manga_listing(database: Session, search: str | None = None):
                 (Manga.authors.ilike(search_pattern)) |
                 (Manga.serializations.ilike(search_pattern))
             )
-            
-        query = query.order_by(Manga.popularity.asc())
+
+        # 2. Apply genre filter
+        if genre:
+            genre_pattern = f"%{genre}%"
+            query = query.filter(Manga.genres.ilike(genre_pattern))
+
+        # 3. Apply published date range filters with safe SQL Date casting
+        if published_after:
+            query = query.filter(cast(Manga.published_from, Date) >= published_after)
+        if published_before:
+            query = query.filter(cast(Manga.published_from, Date) <= published_before)
+
+        # 4. Apply dynamic sorting criteria
+        if sort_by == "highest_voted" or sort_by == "score":
+            query = query.order_by(Manga.score.desc().nullslast())
+        elif sort_by == "most_chapters":
+            query = query.order_by(Manga.chapters.desc().nullslast())
+        elif sort_by == "most_volumes":
+            query = query.order_by(Manga.volumes.desc().nullslast())
+        elif sort_by == "newest":
+            query = query.order_by(Manga.published_from.desc().nullslast())
+        elif sort_by == "oldest":
+            query = query.order_by(Manga.published_from.asc().nullslast())
+        elif sort_by == "popularity":
+            query = query.order_by(Manga.popularity.asc().nullslast())
+        elif sort_by == "favorites":
+            query = query.order_by(Manga.favorites.desc().nullslast())
+        elif sort_by == "rank":
+            query = query.order_by(Manga.rank.asc().nullslast())
+        else:
+            query = query.order_by(Manga.popularity.asc().nullslast())
+
+        # Apply manual pagination
+        offset = (page - 1) * size
+        query = query.offset(offset).limit(size)
         return query
+
     except Exception as e:
         logger.error("Error preparing manga listing query: %s", str(e), exc_info=True)
         raise HTTPException(
@@ -34,7 +79,6 @@ async def get_manga_listing(database: Session, search: str | None = None):
 
 async def get_manga_by_id(mal_id: int, database: Session) -> dict:
     try:
-        # Fetch the target manga
         manga = database.query(Manga).filter(Manga.mal_id == mal_id).first()
         if not manga:
             logger.warning("Manga MAL ID %s not found.", mal_id)
@@ -42,7 +86,6 @@ async def get_manga_by_id(mal_id: int, database: Session) -> dict:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Manga Not Found!"
             )
 
-        # Fetch its precomputed top 10 similar manga using a join
         similarity_query = (
             database.query(MangaSimilarity, Manga)
             .join(Manga, MangaSimilarity.similar_manga_id == Manga.mal_id)
@@ -64,7 +107,6 @@ async def get_manga_by_id(mal_id: int, database: Session) -> dict:
                 "score": sim_manga.score
             })
 
-        # Construct response payload combining manga details and its recommendations
         manga_data = {c.name: getattr(manga, c.name) for c in manga.__table__.columns}
         manga_data["similar_manga"] = similar_list
 
