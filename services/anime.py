@@ -1,19 +1,29 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, types
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.future import select
 import logging
+from sqlalchemy import cast, Date
 from typing import List
+from datetime import date
 
 from models.anime import Anime, AnimeSimilarity
 
 logger = logging.getLogger("anime_app")
 
 
-async def get_anime_listing(database: Session, search: str | None = None):
+async def get_anime_listing(
+    database: Session, 
+    search: str | None = None,
+    genre: str | None = None,
+    aired_after: date | None = None,
+    aired_before: date | None = None,
+    sort_by: str | None = "popularity",
+    page: int = 1,
+    size: int = 20,
+):
     try:
         query = database.query(Anime)
         
-        # Apply search filter if query string is provided
         if search:
             search_pattern = f"%{search}%"
             query = query.filter(
@@ -22,8 +32,39 @@ async def get_anime_listing(database: Session, search: str | None = None):
                 (Anime.genres.ilike(search_pattern)) |
                 (Anime.studios.ilike(search_pattern))
             )
-            
-        query = query.order_by(Anime.popularity.asc())
+
+        # Apply genre filter (since genres are stored as pipe-separated strings like "Action|Comedy")
+        if genre:
+            genre_pattern = f"%{genre}%"
+            query = query.filter(Anime.genres.ilike(genre_pattern))
+
+        if aired_after:
+            query = query.filter(cast(Anime.aired_from, Date) >= aired_after)
+        if aired_before:
+            query = query.filter(cast(Anime.aired_from, Date) <= aired_before)
+
+        # dynamic sorting criteria
+        if sort_by == "highest_voted" or sort_by == "score":
+            query = query.order_by(Anime.score.desc().nullslast())
+        elif sort_by == "most_episodes":
+            query = query.order_by(Anime.episodes.desc().nullslast())
+        elif sort_by == "newest":
+            query = query.order_by(Anime.aired_from.desc().nullslast())
+        elif sort_by == "oldest":
+            query = query.order_by(Anime.aired_from.asc().nullslast())
+        elif sort_by == "popularity":
+            query = query.order_by(Anime.popularity.asc().nullslast())
+        elif sort_by == "favorites":
+            query = query.order_by(Anime.favorites.desc().nullslast())
+        elif sort_by == "rank":
+            query = query.order_by(Anime.rank.asc().nullslast())
+        else:
+            # Fallback default
+            query = query.order_by(Anime.popularity.asc().nullslast())
+
+        # Apply pagination
+        offset = (page - 1) * size
+        query = query.offset(offset).limit(size)
         return query
     except Exception as e:
         logger.error("Error preparing anime listing query: %s", str(e), exc_info=True)

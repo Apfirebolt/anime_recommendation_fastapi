@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, status, Query
-from fastapi_pagination import Page, add_pagination
+from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate as sqlalchemy_paginate
 from sqlalchemy.orm import Session
+from datetime import date
 
 from config.db import get_db
 from schema.anime import AnimeBase, AnimeDetailResponse
@@ -16,11 +17,27 @@ async def anime_list(
     size: int = Query(20, ge=1, le=50, description="Items per page (max 50)"),
     page: int = Query(1, ge=1, description="Page number"),
     search: str | None = Query(None, description="Search query for title, genre, or studio"),
+    genre: str | None = Query(None, description="Filter by a specific genre (e.g., 'Action')"),
+    aired_after: date | None = Query(None, description="Filter anime aired on or after this date (YYYY-MM-DD)"),
+    aired_before: date | None = Query(None, description="Filter anime aired on or before this date (YYYY-MM-DD)"),
+    sort_by: str | None = Query(
+        "popularity", 
+        description="Sort criteria: 'popularity', 'highest_voted', 'most_episodes', 'newest', 'oldest', 'favorites', 'rank'"
+    ),
 ):
     """
-    Get paginated list of anime with optional search filtering.
+    Get paginated list of anime with optional search, genre, and date range filters.
     """
-    anime_query = await get_anime_listing(database, search=search)
+    anime_query = await get_anime_listing(
+        database, 
+        search=search, 
+        genre=genre, 
+        aired_after=aired_after, 
+        aired_before=aired_before,
+        page=page,
+        size=size,
+        sort_by=sort_by
+    )
     return sqlalchemy_paginate(database, anime_query)
 
 
