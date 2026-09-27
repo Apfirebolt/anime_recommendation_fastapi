@@ -1,3 +1,4 @@
+# main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
@@ -13,34 +14,48 @@ from routes.manga import router as manga_router
 # Configure logger for the anime app
 logger = logging.getLogger("anime_app")
 
-# Global memory storage for ML model and precomputed vectors
+# Global memory storage for ML model and precomputed vectors for both anime and manga
 ml_cache = {
     "model": None,
-    "records": None,
-    "vectors": None
+    "anime": {"records": None, "vectors": None},
+    "manga": {"records": None, "vectors": None}
 }
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     FastAPI lifespan context manager for managing application startup and shutdown events.
-    Loads the SentenceTransformer model and precomputed anime cache into RAM.
+    Loads the SentenceTransformer model and precomputed anime and manga caches into RAM.
     """
-    logger.info("Application starting up: Loading AI model and precomputed pickle cache...")
+    logger.info("Application starting up: Loading AI model and precomputed pickle caches...")
     
     try:
-        # Load the model
+        # Load the shared sentence transformer model
         ml_cache["model"] = SentenceTransformer('all-MiniLM-L6-v2')
         
-        # Load the precomputed cache file
-        with open("anime_cache.pkl", "rb") as f:
-            cache_data = pickle.load(f)
-            ml_cache["records"] = cache_data["records"]
-            ml_cache["vectors"] = cache_data["vectors"]
-            
-        logger.info("Successfully loaded %d anime records and vectors into memory!", len(ml_cache["records"]))
+        # 1. Load Anime Cache
+        try:
+            with open("anime_cache.pkl", "rb") as f:
+                anime_data = pickle.load(f)
+                ml_cache["anime"]["records"] = anime_data["records"]
+                ml_cache["anime"]["vectors"] = anime_data["vectors"]
+            logger.info("Successfully loaded %d anime records into memory!", len(ml_cache["anime"]["records"]))
+        except Exception as e:
+            logger.warning("Could not load anime_cache.pkl: %s", str(e))
+
+        # 2. Load Manga Cache
+        try:
+            with open("manga_cache.pkl", "rb") as f:
+                manga_data = pickle.load(f)
+                ml_cache["manga"]["records"] = manga_data["records"]
+                ml_cache["manga"]["vectors"] = manga_data["vectors"]
+            logger.info("Successfully loaded %d manga records into memory!", len(ml_cache["manga"]["records"]))
+        except Exception as e:
+            logger.warning("Could not load manga_cache.pkl: %s", str(e))
+
     except Exception as e:
-        logger.error("Failed to load ML model or anime_cache.pkl during startup: %s", str(e), exc_info=True)
+        logger.error("Failed to load AI model during startup: %s", str(e), exc_info=True)
 
     yield
     
