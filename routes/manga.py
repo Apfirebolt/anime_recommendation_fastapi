@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from config.db import get_db
 from schema.manga import MangaBase, MangaDetailResponse
 from services.manga import get_manga_listing, get_manga_by_id
+from services.vibe_search import search_manga_by_vibe
 
 router = APIRouter(tags=["Manga"], prefix="/api/manga")
 
@@ -39,6 +40,17 @@ async def manga_list(
         size=size
     )
     return sqlalchemy_paginate(database, manga_query)
+
+
+@router.get("/vibe-search/", status_code=status.HTTP_200_OK, response_model=list[MangaBase])
+async def manga_vibe_search(
+    query: str = Query(..., description="Search query for manga vibe matching"),
+    top_k: int = Query(10, ge=1, le=50, description="Number of top results to return"),
+):
+    """
+    Search for manga based on vibe similarity using a precomputed AI model.
+    """
+    return await search_manga_by_vibe(query, top_k=top_k)
 
 
 @router.get("/{mal_id}", status_code=status.HTTP_200_OK, response_model=MangaDetailResponse)
