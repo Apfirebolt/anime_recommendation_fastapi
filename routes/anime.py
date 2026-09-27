@@ -46,12 +46,13 @@ async def anime_list(
 async def vibe_search(
     q: str = Query(..., description="Natural language description, e.g., 'gritty cyberpunk action with hackers'"),
     limit: int = Query(10, ge=1, le=20),
-    database: Session = Depends(get_db),
+    database: Session = Depends(get_db), # Can be kept or removed entirely since it's no longer used
 ):
     """
-    Search anime using natural language semantics via sentence embeddings and cosine similarity.
+    Search anime using natural language semantics via precomputed sentence embeddings in RAM.
     """
-    results = await search_anime_by_vibe(database, query_text=q, top_k=limit)
+    # Fix: Remove 'database' from the call since search_anime_by_vibe only takes query_text and top_k
+    results = await search_anime_by_vibe(query_text=q, top_k=limit)
     return {"results": results}
 
 
