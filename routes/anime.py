@@ -7,6 +7,7 @@ from datetime import date
 from config.db import get_db
 from schema.anime import AnimeBase, AnimeDetailResponse
 from services.anime import get_anime_listing, get_anime_by_id
+from services.vibe_search import search_anime_by_vibe
 
 router = APIRouter(tags=["Anime"], prefix="/api/anime")
 
@@ -39,6 +40,19 @@ async def anime_list(
         sort_by=sort_by
     )
     return sqlalchemy_paginate(database, anime_query)
+
+
+@router.get("/vibe-search", status_code=status.HTTP_200_OK)
+async def vibe_search(
+    q: str = Query(..., description="Natural language description, e.g., 'gritty cyberpunk action with hackers'"),
+    limit: int = Query(10, ge=1, le=20),
+    database: Session = Depends(get_db),
+):
+    """
+    Search anime using natural language semantics via sentence embeddings and cosine similarity.
+    """
+    results = await search_anime_by_vibe(database, query_text=q, top_k=limit)
+    return {"results": results}
 
 
 @router.get("/{mal_id}", status_code=status.HTTP_200_OK, response_model=AnimeDetailResponse)
