@@ -1,3 +1,4 @@
+# services/vibe_search.py
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import logging
@@ -6,16 +7,16 @@ logger = logging.getLogger("anime_app")
 
 async def search_anime_by_vibe(query_text: str, top_k: int = 10):
     try:
-        # Import ml_cache dynamically or at the top to avoid circular imports
         from main import ml_cache
 
         model = ml_cache.get("model")
-        records = ml_cache.get("records")
-        vectors = ml_cache.get("vectors")
+        anime_cache = ml_cache.get("anime", {})
+        records = anime_cache.get("records")
+        vectors = anime_cache.get("vectors")
 
         # Verify cache is properly populated from lifespan startup
         if not model or not records or vectors is None or len(records) == 0:
-            logger.error("Vibe search cache is empty or model failed to initialize in memory.")
+            logger.error("Anime vibe search cache is empty or model failed to initialize in memory.")
             return []
 
         # 1. Encode ONLY the user's incoming search query
@@ -29,7 +30,6 @@ async def search_anime_by_vibe(query_text: str, top_k: int = 10):
 
         results = []
         for idx in top_indices:
-            # Since pickle records are already serialized dictionaries, copy them directly
             anime_dict = dict(records[idx])
             score = float(similarities[idx])
             
@@ -39,7 +39,7 @@ async def search_anime_by_vibe(query_text: str, top_k: int = 10):
         return results
 
     except Exception as e:
-        logger.error("Error executing vibe search: %s", str(e), exc_info=True)
+        logger.error("Error executing anime vibe search: %s", str(e), exc_info=True)
         return []
 
 

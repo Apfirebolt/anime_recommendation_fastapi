@@ -42,15 +42,16 @@ async def manga_list(
     return sqlalchemy_paginate(database, manga_query)
 
 
-@router.get("/vibe-search/", status_code=status.HTTP_200_OK, response_model=list[MangaBase])
+@router.get("/vibe-search", status_code=status.HTTP_200_OK)
 async def manga_vibe_search(
-    query: str = Query(..., description="Search query for manga vibe matching"),
-    top_k: int = Query(10, ge=1, le=50, description="Number of top results to return"),
+    q: str = Query(..., description="Search query for manga vibe matching"),
+    limit: int = Query(10, ge=1, le=50, description="Number of top results to return"),
 ):
     """
     Search for manga based on vibe similarity using a precomputed AI model.
     """
-    return await search_manga_by_vibe(query, top_k=top_k)
+    results = await search_manga_by_vibe(q, top_k=limit)
+    return {"results": results}
 
 
 @router.get("/{mal_id}", status_code=status.HTTP_200_OK, response_model=MangaDetailResponse)
