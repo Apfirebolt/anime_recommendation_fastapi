@@ -51,7 +51,6 @@ async def vibe_search(
     """
     Search anime using natural language semantics via precomputed sentence embeddings in RAM.
     """
-    # Fix: Remove 'database' from the call since search_anime_by_vibe only takes query_text and top_k
     results = await search_anime_by_vibe(query_text=q, top_k=limit)
     return {"results": results}
 
