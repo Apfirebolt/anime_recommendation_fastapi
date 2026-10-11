@@ -1,5 +1,7 @@
 from fastapi import HTTPException, status, types
-from sqlalchemy.orm import Session, joinedload
+from typing import Optional, List
+from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from sqlalchemy.future import select
 import logging
 from sqlalchemy import cast, Date
@@ -147,9 +149,24 @@ async def get_character_by_id(character_id: int, database: Session) -> dict:
         )
 
 
-async def get_character_list(database: Session, limit: int = 10, offset: int = 0) -> list:
+async def get_character_list(database: Session, search: str | None = None, limit: int = 10, offset: int = 0) -> list:
     try:
-        characters = database.query(Character).limit(limit).offset(offset).all()
+        query = database.query(Character)
+        
+        # Apply fuzzy/flexible search if a search query is provided
+        if search:
+            search_pattern = f"%{search}%"
+            query = query.filter(
+                or_(
+                    Character.name.ilike(search_pattern),
+                    Character.full_name.ilike(search_pattern),
+                    Character.alternate_name.ilike(search_pattern),
+                    Character.description.ilike(search_pattern)
+                )
+            )
+            
+        characters = query.limit(limit).offset(offset).all()
+        
         character_list = [
             {c.name: getattr(character, c.name) for c in character.__table__.columns}
             for character in characters
