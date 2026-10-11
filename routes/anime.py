@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from datetime import date
 
 from config.db import get_db
-from schema.anime import AnimeBase, AnimeDetailResponse
-from services.anime import get_anime_listing, get_anime_by_id
+from schema.anime import AnimeBase, AnimeDetailResponse, CharacterResponse, CharacterListResponse
+from services.anime import get_anime_listing, get_anime_by_id, get_character_by_id, get_character_list
 from services.vibe_search import search_anime_by_vibe
 
 router = APIRouter(tags=["Anime"], prefix="/api/anime")
@@ -46,13 +46,37 @@ async def anime_list(
 async def vibe_search(
     q: str = Query(..., description="Natural language description, e.g., 'gritty cyberpunk action with hackers'"),
     limit: int = Query(10, ge=1, le=20),
-    database: Session = Depends(get_db), # Can be kept or removed entirely since it's no longer used
+    database: Session = Depends(get_db),
 ):
     """
     Search anime using natural language semantics via precomputed sentence embeddings in RAM.
     """
     results = await search_anime_by_vibe(query_text=q, top_k=limit)
     return {"results": results}
+
+
+@router.get("/characters", status_code=status.HTTP_200_OK, response_model=CharacterListResponse)
+async def get_characters(
+    database: Session = Depends(get_db),
+    limit: int = Query(10, ge=1, le=50, description="Number of characters to retrieve"),
+    offset: int = Query(0, ge=0, description="Offset for pagination"),
+):
+    """
+    Get a list of characters with pagination support.
+    """
+    characters = await get_character_list(database, limit=limit, offset=offset)
+    return {"characters": characters}
+
+
+@router.get("/characters/{character_id}", status_code=status.HTTP_200_OK, response_model=CharacterResponse)
+async def get_character_detail(
+    character_id: int,
+    database: Session = Depends(get_db),
+):
+    """
+    Get complete details of a specific character.
+    """
+    return await get_character_by_id(character_id, database)
 
 
 @router.get("/{mal_id}", status_code=status.HTTP_200_OK, response_model=AnimeDetailResponse)

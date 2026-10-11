@@ -6,7 +6,7 @@ from sqlalchemy import cast, Date
 from typing import List
 from datetime import date
 
-from models.anime import Anime, AnimeSimilarity
+from models.anime import Anime, AnimeSimilarity, Character
 
 logger = logging.getLogger("anime_app")
 
@@ -119,4 +119,46 @@ async def get_anime_by_id(mal_id: int, database: Session) -> dict:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An error occurred while fetching anime details: {str(e)}",
+        )
+
+
+async def get_character_by_id(character_id: int, database: Session) -> dict:
+    try:
+        # Fetch the target character
+        character = database.query(Character).filter(Character.character_id == character_id).first()
+        if not character:
+            logger.warning("Character ID %s not found.", character_id)
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Character Not Found!"
+            )
+
+        # Construct response payload
+        character_data = {c.name: getattr(character, c.name) for c in character.__table__.columns}
+
+        return character_data
+
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        logger.error("Error fetching character ID %s: %s", character_id, str(e), exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred while fetching character details: {str(e)}",
+        )
+
+
+async def get_character_list(database: Session, limit: int = 10, offset: int = 0) -> list:
+    try:
+        characters = database.query(Character).limit(limit).offset(offset).all()
+        character_list = [
+            {c.name: getattr(character, c.name) for c in character.__table__.columns}
+            for character in characters
+        ]
+        return character_list
+
+    except Exception as e:
+        logger.error("Error fetching character list: %s", str(e), exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred while fetching character list: {str(e)}",
         )

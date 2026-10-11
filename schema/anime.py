@@ -47,3 +47,24 @@ class AnimeDetailResponse(AnimeBase):
 
     class Config:
         from_attributes = True
+
+
+class CharacterResponse(BaseModel):
+    character_id: int
+    name: str
+    role: Optional[str] = None
+    age: Optional[str] = None
+    gender: Optional[str] = None
+    image_url: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class CharacterListResponse(BaseModel):
+    characters: List[CharacterResponse] = []
+
+    class Config:
+        from_attributes = True
+
+        

@@ -57,3 +57,15 @@ class AnimeSimilarity(Base):
     # Relationships back to the anime table
     anime = relationship("Anime", foreign_keys=[anime_id])
     similar_anime = relationship("Anime", foreign_keys=[similar_anime_id])
+
+
+class Character(Base):
+    __tablename__ = "characters"
+
+    character_id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), nullable=False, index=True)
+    full_name = Column(String(255), nullable=True)
+    alternate_name = Column(Text, nullable=True)
+    url = Column(String(500), nullable=True)
+    attributes = Column(Text, nullable=True)
+    description = Column(Text, nullable=True)

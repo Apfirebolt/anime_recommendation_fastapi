@@ -5,7 +5,7 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from config.db import Base
-from models.anime import Anime, AnimeSimilarity
+from models.anime import Anime, AnimeSimilarity, Character
 from models.manga import Manga, MangaSimilarity
 
 from alembic import context
