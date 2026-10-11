@@ -149,11 +149,11 @@ async def get_character_by_id(character_id: int, database: Session) -> dict:
         )
 
 
-async def get_character_list(database: Session, search: str | None = None, limit: int = 10, offset: int = 0) -> list:
+async def get_character_list(database: Session, search: str | None = None, limit: int = 10, offset: int = 0) -> dict:
     try:
         query = database.query(Character)
         
-        # Apply fuzzy/flexible search if a search query is provided
+        # Apply fuzzy search across multiple columns if search query is provided
         if search:
             search_pattern = f"%{search}%"
             query = query.filter(
@@ -165,13 +165,19 @@ async def get_character_list(database: Session, search: str | None = None, limit
                 )
             )
             
-        characters = query.limit(limit).offset(offset).all()
+        # Get total count before pagination
+        total = query.count()
         
-        character_list = [
-            {c.name: getattr(character, c.name) for c in character.__table__.columns}
-            for character in characters
-        ]
-        return character_list
+        # Fetch paginated slice
+        characters = query.offset(offset).limit(limit).all()
+        
+        # Return dictionary directly matching CharacterListResponse fields
+        return {
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+            "characters": characters
+        }
 
     except Exception as e:
         logger.error("Error fetching character list: %s", str(e), exc_info=True)

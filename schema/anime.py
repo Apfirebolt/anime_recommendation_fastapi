@@ -64,6 +64,9 @@ class CharacterResponse(BaseModel):
 
 
 class CharacterListResponse(BaseModel):
+    total: int
+    limit: int
+    offset: int
     characters: List[CharacterResponse] = []
 
     class Config:

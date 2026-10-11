@@ -58,15 +58,14 @@ async def vibe_search(
 @router.get("/characters", status_code=status.HTTP_200_OK, response_model=CharacterListResponse)
 async def get_characters(
     database: Session = Depends(get_db),
-    search: str | None = Query(None, description="Search term for character name, full name, alternate name, or description"),
-    limit: int = Query(10, ge=1, le=50, description="Number of characters to retrieve"),
+    search: str | None = Query(None, description="Fuzzy search term for name, full name, alternate name, or description"),
+    limit: int = Query(10, ge=1, le=50, description="Number of characters to retrieve (max 50)"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
 ):
     """
-    Get a paginated list of characters with optional text search across name and description fields.
+    Get a paginated list of characters with optional fuzzy text search.
     """
-    characters = await get_character_list(database, search=search, limit=limit, offset=offset)
-    return {"characters": characters}
+    return await get_character_list(database, search=search, limit=limit, offset=offset)
 
 
 @router.get("/characters/{character_id}", status_code=status.HTTP_200_OK, response_model=CharacterResponse)
