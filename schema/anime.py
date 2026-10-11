@@ -52,10 +52,12 @@ class AnimeDetailResponse(AnimeBase):
 class CharacterResponse(BaseModel):
     character_id: int
     name: str
+    full_name: Optional[str] = None
+    alternate_name: Optional[str] = None
     role: Optional[str] = None
-    age: Optional[str] = None
-    gender: Optional[str] = None
-    image_url: Optional[str] = None
+    attributes: Optional[str] = None
+    url: Optional[str] = None
+    description: Optional[str] = None
 
     class Config:
         from_attributes = True
